@@ -36,4 +36,12 @@ describe('Dashboard', () => {
     renderWithContext(<Dashboard onNavigate={() => {}} />)
     expect(screen.getByLabelText('0 day streak')).toBeInTheDocument()
   })
+
+  it('shows study tips and crisis resources section', () => {
+    renderWithContext(<Dashboard onNavigate={() => {}} />)
+    expect(screen.getAllByText((t) => t.includes('Study Tips')).length).toBeGreaterThan(0)
+    expect(screen.getByText('Pomodoro Technique:')).toBeInTheDocument()
+    expect(screen.getByText('Need Help?')).toBeInTheDocument()
+    expect(screen.getByText('988')).toBeInTheDocument()
+  })
 })

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import PropTypes from 'prop-types'
 import { loadEntries, saveEntries, loadChat, saveChat, loadApiKey, saveApiKey } from '../utils/storage.js'
 import { analyzeEntry, analyzeEntryWithGroq, chatWithGroq, generateChatFallback } from '../utils/ai.js'
 import { sanitizeInput } from '../utils/constants.js'
@@ -101,7 +102,7 @@ export function WellnessProvider({ children }) {
 
   const value = useMemo(() => ({
     entries, chatMessages, apiKey, aiMode, todayEntry, streak,
-    analyzingEntry, addEntry, setEntries, sendMessage, clearChat, setApiKey,
+    analyzingEntry, addEntry, sendMessage, clearChat, setApiKey,
   }), [entries, chatMessages, apiKey, aiMode, todayEntry, streak, analyzingEntry, addEntry, sendMessage, clearChat, setApiKey])
 
   return (
@@ -109,6 +110,10 @@ export function WellnessProvider({ children }) {
       {children}
     </WellnessContext>
   )
+}
+
+WellnessProvider.propTypes = {
+  children: PropTypes.node,
 }
 
 // eslint-disable-next-line react-refresh/only-export-components

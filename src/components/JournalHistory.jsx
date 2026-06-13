@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import PropTypes from 'prop-types'
 import { useWellness } from '../context/WellnessContext.jsx'
 import './JournalHistory.css'
 
@@ -53,6 +54,11 @@ function JournalEntry({ entry, isLatest }) {
       )}
     </article>
   )
+}
+
+JournalEntry.propTypes = {
+  entry: PropTypes.object.isRequired,
+  isLatest: PropTypes.bool,
 }
 
 export default function JournalHistory() {

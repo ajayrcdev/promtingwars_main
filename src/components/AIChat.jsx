@@ -97,7 +97,7 @@ export default function AIChat() {
             <span aria-hidden="true">🆘</span> Need immediate help?
           </p>
           {CRISIS_RESOURCES.slice(0, 2).map(r => (
-            <a key={r.name} href={r.url} target="_blank" rel="noreferrer" className="crisis-link">
+            <a key={r.name} href={r.url} target="_blank" rel="noopener noreferrer" className="crisis-link">
               {r.name}: <strong>{r.number}</strong>
             </a>
           ))}

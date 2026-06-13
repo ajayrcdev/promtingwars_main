@@ -87,7 +87,7 @@ export default function SettingsModal({ onClose }) {
             <p className="setting-desc">
               Connect a free Groq API key to use real AI analysis and chat.
               Sign up and get a free API key at{' '}
-              <a href="https://console.groq.com" target="_blank" rel="noreferrer">
+              <a href="https://console.groq.com" target="_blank" rel="noopener noreferrer">
                 console.groq.com
               </a>
               {' '}(no credit card required).

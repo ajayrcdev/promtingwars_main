@@ -1,6 +1,7 @@
 import { useMemo, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import { useWellness } from '../context/WellnessContext.jsx'
+import { CRISIS_RESOURCES, STUDY_TIPS } from '../utils/constants.js'
 import './Dashboard.css'
 
 function MoodBar({ date, mood }) {
@@ -125,6 +126,30 @@ export default function Dashboard({ onNavigate }) {
           <p>Log your first daily check-in to begin tracking your mental well-being.</p>
         </div>
       )}
+
+      <section className="resources-section" aria-label="Study tips and crisis support">
+        <details className="resources-details">
+          <summary className="resources-summary">📚 Study Tips & Support</summary>
+          <div className="study-tips">
+            <h3>Study Tips</h3>
+            <ul className="tip-list">
+              {STUDY_TIPS.map(tip => (
+                <li key={tip.title} className="tip-item">
+                  <strong>{tip.title}:</strong> {tip.desc}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="crisis-resources-section">
+            <h3>Need Help?</h3>
+            {CRISIS_RESOURCES.map(r => (
+              <a key={r.name} href={r.url} target="_blank" rel="noopener noreferrer" className="crisis-link">
+                {r.name}: <strong>{r.number}</strong>
+              </a>
+            ))}
+          </div>
+        </details>
+      </section>
     </div>
   )
 }
