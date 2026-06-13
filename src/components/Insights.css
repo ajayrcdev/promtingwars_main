@@ -1,0 +1,215 @@
+.insights-page {
+  padding: 24px 16px 16px;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.insights-summary {
+  display: flex;
+  gap: 10px;
+}
+
+.insight-stat {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  flex: 1;
+}
+
+.insight-stat.wide {
+  flex: 2;
+}
+
+.insight-stat-value {
+  display: block;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.insight-stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.mood-distribution {
+  margin-top: 12px;
+}
+
+.mood-dist-bar {
+  display: flex;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg-card-alt);
+}
+
+.mood-dist-fill.good { background: var(--success); }
+.mood-dist-fill.mid { background: var(--warning); }
+.mood-dist-fill.low { background: var(--danger); }
+
+.mood-dist-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.insight-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+
+.insight-card h3 {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+}
+
+.trigger-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trigger-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.trigger-name {
+  font-size: 0.8rem;
+  white-space: nowrap;
+  min-width: 120px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.trigger-bar-wrap {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-card-alt);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.trigger-bar {
+  height: 100%;
+  background: linear-gradient(to right, var(--danger), var(--warning));
+  border-radius: 3px;
+}
+
+.trigger-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  min-width: 24px;
+  text-align: right;
+}
+
+.trend-insights {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.trend-text {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.day-highlight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--bg-card-alt);
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.highlight-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: 600;
+  min-width: 80px;
+}
+
+.highlight-mood {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--danger);
+}
+
+.highlight-mood.good {
+  color: var(--success);
+}
+
+.practice-card {
+  margin-bottom: 12px;
+}
+
+.practice-card:last-child {
+  margin-bottom: 0;
+}
+
+.practice-card h4 {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.practice-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.practice-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.pattern-analysis p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.pattern-list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pattern-list li {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.pattern-list li strong {
+  color: var(--primary);
+}
