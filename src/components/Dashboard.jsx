@@ -1,37 +1,69 @@
+import { useMemo, useCallback } from 'react'
+import PropTypes from 'prop-types'
 import { useWellness } from '../context/WellnessContext.jsx'
 import { MOTIVATIONAL } from '../utils/ai.js'
 import './Dashboard.css'
 
-export default function Dashboard({ onNavigate }) {
-  const { entries, streak, todayEntry, aiMode, apiKey } = useWellness()
-  const quote = MOTIVATIONAL[Math.floor(Math.random() * MOTIVATIONAL.length)]
+function MoodBar({ date, mood }) {
+  const dayLabel = new Date(date + 'T00:00:00').toLocaleDateString('en', { weekday: 'short' })
+  return (
+    <div className="mood-bar-wrap" title={`${date}: ${mood}/10`}>
+      <div
+        className="mood-bar"
+        style={{ height: `${(mood / 10) * 100}%` }}
+        role="img"
+        aria-label={`Mood ${mood} out of 10 on ${dayLabel}`}
+      />
+      <span className="mood-bar-label">{dayLabel}</span>
+    </div>
+  )
+}
 
-  const recentEntries = entries.slice(0, 7)
-  const avgMood = entries.length ? Math.round(entries.reduce((s, e) => s + e.mood, 0) / entries.length * 10) / 10 : 0
-  const totalCheckins = entries.length
-  const goodDays = entries.filter(e => e.mood >= 7).length
+MoodBar.propTypes = {
+  date: PropTypes.string.isRequired,
+  mood: PropTypes.number.isRequired,
+}
+
+export default function Dashboard({ onNavigate }) {
+  const { entries, streak, todayEntry, aiMode } = useWellness()
+  const quote = useMemo(() => MOTIVATIONAL[Math.floor(Math.random() * MOTIVATIONAL.length)], [])
+
+  const { avgMood, totalCheckins, goodDays, recentEntries } = useMemo(() => {
+    const recent = entries.slice(0, 7)
+    const avg = entries.length ? Math.round(entries.reduce((s, e) => s + e.mood, 0) / entries.length * 10) / 10 : 0
+    return {
+      avgMood: avg,
+      totalCheckins: entries.length,
+      goodDays: entries.filter(e => e.mood >= 7).length,
+      recentEntries: recent,
+    }
+  }, [entries])
+
+  const handleCheckinNav = useCallback(() => onNavigate('checkin'), [onNavigate])
 
   return (
-    <div className="dashboard">
+    <div className="dashboard" role="region" aria-label="Dashboard overview">
       <header className="dash-header">
         <div>
           <h1>Welcome back</h1>
-          <p className="dash-date">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+          <p className="dash-date">
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </p>
         </div>
-        <div className="streak-badge">
-          <span className="streak-fire">🔥</span>
+        <div className="streak-badge" role="status" aria-label={`${streak} day streak`}>
+          <span className="streak-fire" aria-hidden="true">🔥</span>
           <span className="streak-num">{streak}</span>
           <span className="streak-label">day streak</span>
         </div>
       </header>
 
-      <div className="quote-card">
-        <p className="quote-text">"{quote}"</p>
+      <div className="quote-card" aria-label="Daily motivational quote">
+        <p className="quote-text">&ldquo;{quote}&rdquo;</p>
       </div>
 
       {aiMode === 'mock' && (
-        <div className="ai-banner">
-          <span className="ai-banner-icon">🧪</span>
+        <div className="ai-banner" role="status" aria-label="Demo mode active">
+          <span className="ai-banner-icon" aria-hidden="true">🧪</span>
           <div>
             <strong>Demo Mode</strong>
             <p>Add a Gemini API key in Settings (⚙️) for real AI analysis ✨</p>
@@ -39,80 +71,81 @@ export default function Dashboard({ onNavigate }) {
         </div>
       )}
       {aiMode === 'gemini' && (
-        <div className="ai-banner active">
-          <span className="ai-banner-icon">✨</span>
+        <div className="ai-banner active" role="status" aria-label="Gemini AI active">
+          <span className="ai-banner-icon" aria-hidden="true">✨</span>
           <div>
             <strong>Gemini AI Active</strong>
             <p>Journal analysis & chat powered by real AI</p>
           </div>
         </div>
       )}
-      <div className="stats-grid">
+
+      <section className="stats-grid" aria-label="Your wellness statistics">
         <div className="stat-card">
-          <span className="stat-icon">📊</span>
+          <span className="stat-icon" aria-hidden="true">📊</span>
           <span className="stat-value">{avgMood}</span>
           <span className="stat-label">Avg Mood</span>
         </div>
         <div className="stat-card">
-          <span className="stat-icon">✅</span>
+          <span className="stat-icon" aria-hidden="true">✅</span>
           <span className="stat-value">{totalCheckins}</span>
           <span className="stat-label">Check-ins</span>
         </div>
         <div className="stat-card">
-          <span className="stat-icon">🌟</span>
+          <span className="stat-icon" aria-hidden="true">🌟</span>
           <span className="stat-value">{goodDays}</span>
           <span className="stat-label">Good Days</span>
         </div>
-      </div>
+      </section>
 
       {todayEntry && (
-        <div className="today-card">
-          <h3>Today's Entry</h3>
+        <section className="today-card" aria-label="Today's journal entry">
+          <h2 id="today-heading" className="section-heading">Today&apos;s Entry</h2>
           <div className="today-mood">
             <span>Mood: <strong>{todayEntry.mood}/10</strong></span>
             <span className={`sentiment-tag ${todayEntry.analysis?.sentiment || 'neutral'}`}>
               {todayEntry.analysis?.sentiment || 'Neutral'}
             </span>
           </div>
-          <p className="today-journal">"{todayEntry.journal.slice(0, 120)}{todayEntry.journal.length > 120 ? '…' : ''}"</p>
+          <p className="today-journal">
+            &ldquo;{todayEntry.journal.slice(0, 120)}{todayEntry.journal.length > 120 ? '…' : ''}&rdquo;
+          </p>
           {todayEntry.analysis?.motivational && (
-            <p className="today-motivation">💙 {todayEntry.analysis.motivational}</p>
+            <p className="today-motivation" role="status">
+              <span aria-hidden="true">💙</span> {todayEntry.analysis.motivational}
+            </p>
           )}
-        </div>
+        </section>
       )}
 
       {!todayEntry && (
-        <button className="btn-primary btn-large" onClick={() => onNavigate('checkin')}>
-          ✏️ Start Today's Check-in
+        <button className="btn-primary btn-large" onClick={handleCheckinNav} aria-label="Start today's check-in">
+          <span aria-hidden="true">✏️</span> Start Today&apos;s Check-in
         </button>
       )}
 
       {recentEntries.length > 0 && (
-        <div className="mini-chart">
-          <h3>Recent Mood</h3>
-          <div className="mood-bars">
-            {recentEntries.map((e, i) => (
-              <div key={e.id} className="mood-bar-wrap" title={`${e.date}: ${e.mood}/10`}>
-                <div
-                  className="mood-bar"
-                  style={{ height: `${(e.mood / 10) * 100}%` }}
-                />
-                <span className="mood-bar-label">
-                  {new Date(e.date).toLocaleDateString('en', { weekday: 'short' })}
-                </span>
-              </div>
+        <section className="mini-chart" aria-label="Recent mood chart">
+          <h2 id="chart-heading" className="section-heading">Recent Mood</h2>
+          <div className="mood-bars" role="img" aria-label="Bar chart of mood over recent days">
+            {recentEntries.map((e) => (
+              <MoodBar key={e.id} date={e.date} mood={e.mood} />
             ))}
           </div>
-        </div>
+        </section>
       )}
 
       {entries.length === 0 && (
-        <div className="empty-state">
-          <span className="empty-icon">🧘</span>
-          <h3>Start Your Wellness Journey</h3>
+        <div className="empty-state" role="status">
+          <span className="empty-icon" aria-hidden="true">🧘</span>
+          <h2>Start Your Wellness Journey</h2>
           <p>Log your first daily check-in to begin tracking your mental well-being.</p>
         </div>
       )}
     </div>
   )
+}
+
+Dashboard.propTypes = {
+  onNavigate: PropTypes.func.isRequired,
 }

@@ -166,3 +166,13 @@
   background: var(--warning-light);
   color: #d97706;
 }
+
+.security-note {
+  margin-top: 12px;
+  font-size: 0.75rem;
+  color: var(--text-light);
+  line-height: 1.4;
+  padding: 10px 12px;
+  background: var(--bg-card-alt);
+  border-radius: 8px;
+}

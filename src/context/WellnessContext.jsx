@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { loadEntries, saveEntries, loadChat, saveChat, loadApiKey, saveApiKey } from '../utils/storage.js'
 import { analyzeEntry, analyzeEntryWithGemini, chatWithGemini, generateChatFallback } from '../utils/ai.js'
+import { sanitizeInput } from '../utils/constants.js'
 
 const WellnessContext = createContext(null)
 
@@ -10,6 +11,7 @@ export function WellnessProvider({ children }) {
   const [apiKey, setApiKeyState] = useState('')
   const [aiMode, setAiMode] = useState('mock')
   const [loaded, setLoaded] = useState(false)
+  const [analyzingEntry, setAnalyzingEntry] = useState(false)
   const pendingReply = useRef(false)
 
   useEffect(() => {
@@ -25,8 +27,12 @@ export function WellnessProvider({ children }) {
   useEffect(() => { if (loaded) saveChat(chatMessages) }, [chatMessages, loaded])
   useEffect(() => { if (loaded) saveApiKey(apiKey) }, [apiKey, loaded])
 
-  const todayEntry = entries.find(e => e.date === new Date().toISOString().split('T')[0])
-  const streak = calculateStreak(entries)
+  const todayEntry = useMemo(
+    () => entries.find(e => e.date === new Date().toISOString().split('T')[0]),
+    [entries]
+  )
+
+  const streak = useMemo(() => calculateStreak(entries), [entries])
 
   const setApiKey = useCallback((key) => {
     setApiKeyState(key)
@@ -36,9 +42,11 @@ export function WellnessProvider({ children }) {
   const addEntry = useCallback(async (entryData) => {
     const date = new Date().toISOString().split('T')[0]
     const existing = entries.findIndex(e => e.date === date)
+    setAnalyzingEntry(true)
 
     const entry = {
       ...entryData,
+      journal: sanitizeInput(entryData.journal),
       date,
       id: date,
       createdAt: new Date().toISOString(),
@@ -61,6 +69,7 @@ export function WellnessProvider({ children }) {
       setEntries(prev => [entry, ...prev])
     }
 
+    setAnalyzingEntry(false)
     return entry
   }, [entries, aiMode, apiKey])
 
@@ -68,23 +77,28 @@ export function WellnessProvider({ children }) {
     if (pendingReply.current) return
     pendingReply.current = true
 
-    const userMsg = { role: 'user', text, timestamp: new Date().toISOString() }
+    const cleanText = sanitizeInput(text)
+    const userMsg = { role: 'user', text: cleanText, timestamp: new Date().toISOString() }
     setChatMessages(prev => [...prev, userMsg])
 
     try {
       let responseText
 
       if (aiMode === 'gemini' && apiKey) {
-        responseText = await chatWithGemini(text, chatMessages, apiKey)
+        responseText = await chatWithGemini(cleanText, chatMessages, apiKey)
       } else {
         await new Promise(r => setTimeout(r, 500 + Math.random() * 600))
-        responseText = generateChatFallback(text)
+        responseText = generateChatFallback(cleanText)
       }
 
       const botMsg = { role: 'bot', text: responseText, timestamp: new Date().toISOString() }
       setChatMessages(prev => [...prev, botMsg])
-    } catch (err) {
-      const fallbackMsg = { role: 'bot', text: 'I\'m here for you. Could you tell me more about how you\'re feeling? 💙', timestamp: new Date().toISOString() }
+    } catch {
+      const fallbackMsg = {
+        role: 'bot',
+        text: 'I\'m here for you. Could you tell me more about how you\'re feeling? 💙',
+        timestamp: new Date().toISOString(),
+      }
       setChatMessages(prev => [...prev, fallbackMsg])
     }
 
@@ -95,8 +109,13 @@ export function WellnessProvider({ children }) {
     setChatMessages([])
   }, [])
 
+  const value = useMemo(() => ({
+    entries, chatMessages, apiKey, aiMode, loaded, todayEntry, streak,
+    analyzingEntry, addEntry, setEntries, sendMessage, clearChat, setApiKey,
+  }), [entries, chatMessages, apiKey, aiMode, loaded, todayEntry, streak, analyzingEntry, addEntry, sendMessage, clearChat, setApiKey])
+
   return (
-    <WellnessContext value={{ entries, chatMessages, apiKey, aiMode, loaded, todayEntry, streak, addEntry, setEntries, sendMessage, clearChat, setApiKey }}>
+    <WellnessContext value={value}>
       {children}
     </WellnessContext>
   )

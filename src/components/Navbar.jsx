@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
+import PropTypes from 'prop-types'
 import { useWellness } from '../context/WellnessContext.jsx'
 import SettingsModal from './SettingsModal.jsx'
 import './Navbar.css'
@@ -12,31 +13,45 @@ const TABS = [
 ]
 
 export default function Navbar({ active, onTabChange }) {
-  const { todayEntry, aiMode } = useWellness()
+  const { todayEntry } = useWellness()
   const [showSettings, setShowSettings] = useState(false)
+
+  const handleSettingsClose = useCallback(() => setShowSettings(false), [])
+  const handleSettingsOpen = useCallback(() => setShowSettings(true), [])
 
   return (
     <>
-      <nav className="navbar">
+      <nav className="navbar" role="navigation" aria-label="Main navigation">
         {TABS.map(tab => (
           <button
             key={tab.id}
             className={`nav-item ${active === tab.id ? 'active' : ''}`}
             onClick={() => onTabChange(tab.id)}
+            aria-current={active === tab.id ? 'page' : undefined}
+            aria-label={`${tab.label} tab`}
           >
-            <span className="nav-icon">
+            <span className="nav-icon" aria-hidden="true">
               {tab.icon}
-              {tab.id === 'checkin' && !todayEntry && <span className="badge-dot" />}
+              {tab.id === 'checkin' && !todayEntry && <span className="badge-dot" aria-label="Check-in needed" />}
             </span>
             <span className="nav-label">{tab.label}</span>
           </button>
         ))}
-        <button className={`nav-item settings-btn ${showSettings ? 'active' : ''}`} onClick={() => setShowSettings(true)}>
-          <span className="nav-icon">⚙️</span>
+        <button
+          className="nav-item settings-btn"
+          onClick={handleSettingsOpen}
+          aria-label="Open settings"
+        >
+          <span className="nav-icon" aria-hidden="true">⚙️</span>
           <span className="nav-label">Settings</span>
         </button>
       </nav>
-      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+      {showSettings && <SettingsModal onClose={handleSettingsClose} />}
     </>
   )
+}
+
+Navbar.propTypes = {
+  active: PropTypes.string.isRequired,
+  onTabChange: PropTypes.func.isRequired,
 }

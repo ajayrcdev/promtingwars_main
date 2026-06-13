@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import PropTypes from 'prop-types'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { useWellness } from '../context/WellnessContext.jsx'
+import { STORAGE_WARNING } from '../utils/constants.js'
 import './SettingsModal.css'
 
 export default function SettingsModal({ onClose }) {
@@ -8,19 +10,33 @@ export default function SettingsModal({ onClose }) {
   const [key, setKey] = useState(apiKey)
   const [saved, setSaved] = useState(false)
   const [testStatus, setTestStatus] = useState(null)
+  const firstFocusRef = useRef(null)
 
-  function handleSave() {
+  useEffect(() => {
+    if (firstFocusRef.current) {
+      firstFocusRef.current.focus()
+    }
+    const handleEsc = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handleEsc)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', handleEsc)
+      document.body.style.overflow = ''
+    }
+  }, [onClose])
+
+  const handleSave = useCallback(() => {
     setApiKey(key.trim())
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
-  }
+  }, [key, setApiKey])
 
-  function handleClear() {
+  const handleClear = useCallback(() => {
     setKey('')
     setApiKey('')
-  }
+  }, [setApiKey])
 
-  async function testKey() {
+  const testKey = useCallback(async () => {
     if (!key.trim()) return
     setTestStatus('testing')
     try {
@@ -32,18 +48,28 @@ export default function SettingsModal({ onClose }) {
     } catch {
       setTestStatus('invalid')
     }
-  }
+  }, [key])
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+    <div
+      className="modal-overlay"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Settings"
+    >
+      <div className="modal" onClick={e => e.stopPropagation()} role="document">
         <div className="modal-header">
-          <h2>⚙️ Settings</h2>
-          <button className="modal-close" onClick={onClose}>✕</button>
+          <h2>
+            <span aria-hidden="true">⚙️</span> Settings
+          </h2>
+          <button className="modal-close" onClick={onClose} aria-label="Close settings" ref={firstFocusRef}>
+            ✕
+          </button>
         </div>
 
         <div className="modal-body">
-          <div className="setting-section">
+          <section className="setting-section">
             <h3>Google Gemini AI</h3>
             <p className="setting-desc">
               Connect your own Gemini API key to use real AI analysis and chat.
@@ -54,20 +80,28 @@ export default function SettingsModal({ onClose }) {
             </p>
 
             <div className="api-key-input-wrap">
+              <label htmlFor="api-key" className="sr-only">Gemini API key</label>
               <input
+                id="api-key"
                 type="password"
                 className="api-key-input"
                 placeholder="Enter your Gemini API key"
                 value={key}
                 onChange={e => setKey(e.target.value)}
+                autoComplete="off"
               />
-              <button className="btn-secondary" onClick={testKey} disabled={!key.trim() || testStatus === 'testing'}>
+              <button
+                className="btn-secondary"
+                onClick={testKey}
+                disabled={!key.trim() || testStatus === 'testing'}
+                aria-label={testStatus === 'testing' ? 'Testing API key' : 'Test API key'}
+              >
                 {testStatus === 'testing' ? 'Testing…' : 'Test'}
               </button>
             </div>
 
-            {testStatus === 'valid' && <p className="key-status valid">✓ Key is valid!</p>}
-            {testStatus === 'invalid' && <p className="key-status invalid">✗ Key is invalid. Please check and try again.</p>}
+            {testStatus === 'valid' && <p className="key-status valid" role="status">✓ Key is valid!</p>}
+            {testStatus === 'invalid' && <p className="key-status invalid" role="status">✗ Key is invalid. Please check and try again.</p>}
 
             <div className="api-key-actions">
               <button className="btn-primary" onClick={handleSave} disabled={!key.trim()}>
@@ -79,30 +113,37 @@ export default function SettingsModal({ onClose }) {
                 </button>
               )}
             </div>
-          </div>
 
-          <div className="setting-section">
+            <p className="security-note" role="note">
+              <span aria-hidden="true">🔒</span> {STORAGE_WARNING}
+            </p>
+          </section>
+
+          <section className="setting-section">
             <h3>AI Mode</h3>
-            <div className={`mode-badge ${aiMode}`}>
+            <div className={`mode-badge ${aiMode}`} role="status">
               {aiMode === 'gemini' ? '✨ Gemini AI (Real)' : '🧪 Mock AI (Demo)'}
             </div>
-            {aiMode === 'mock' && (
-              <p className="setting-desc">Add a Gemini API key above to unlock real AI-powered analysis and conversations.</p>
-            )}
-            {aiMode === 'gemini' && (
-              <p className="setting-desc">Journal entries are analyzed and chat responses are generated using Google Gemini. Your key is stored locally and never sent to our servers.</p>
-            )}
-          </div>
+            <p className="setting-desc">
+              {aiMode === 'mock'
+                ? 'Add a Gemini API key above to unlock real AI-powered analysis and conversations.'
+                : 'Journal entries are analyzed and chat responses are generated using Google Gemini. Your key stays in your browser.'}
+            </p>
+          </section>
 
-          <div className="setting-section">
-            <h3>About</h3>
+          <section className="setting-section">
+            <h3>About MindWell</h3>
             <p className="setting-desc">
               MindWell is a mental wellness companion for students preparing for high-stakes exams.
-              All data is stored in your browser's local storage — nothing is uploaded.
+              All data is stored in your browser&apos;s local storage — nothing is uploaded to any server.
             </p>
-          </div>
+          </section>
         </div>
       </div>
     </div>
   )
+}
+
+SettingsModal.propTypes = {
+  onClose: PropTypes.func.isRequired,
 }

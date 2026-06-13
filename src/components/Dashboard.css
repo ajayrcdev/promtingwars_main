@@ -134,6 +134,16 @@
   letter-spacing: 0.3px;
 }
 
+.section-heading {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  font-weight: 600;
+  font-family: inherit;
+}
+
 .today-card {
   background: var(--bg-card);
   border-radius: var(--radius);
