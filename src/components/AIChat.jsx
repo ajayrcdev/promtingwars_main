@@ -3,7 +3,7 @@ import { useWellness } from '../context/WellnessContext.jsx'
 import './AIChat.css'
 
 export default function AIChat() {
-  const { chatMessages, sendMessage, clearChat } = useWellness()
+  const { chatMessages, sendMessage, clearChat, aiMode } = useWellness()
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const listRef = useRef(null)
@@ -43,8 +43,10 @@ export default function AIChat() {
         <div className="chat-avatar">
           <span className="chat-avatar-icon">🧠</span>
           <div>
-            <h2>MindWell AI</h2>
-            <span className="chat-status">Your wellness companion</span>
+          <h2>MindWell AI</h2>
+          <span className="chat-status">
+            {aiMode === 'gemini' ? '✨ Powered by Gemini AI' : '🧪 Demo Mode'}
+          </span>
           </div>
         </div>
         {chatMessages.length > 1 && (

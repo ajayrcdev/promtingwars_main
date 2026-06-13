@@ -1,30 +1,39 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { loadEntries, saveEntries, loadChat, saveChat, loadProfile, saveProfile } from '../utils/storage.js'
-import { analyzeEntry, generateChatResponse } from '../utils/ai.js'
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
+import { loadEntries, saveEntries, loadChat, saveChat, loadApiKey, saveApiKey } from '../utils/storage.js'
+import { analyzeEntry, analyzeEntryWithGemini, chatWithGemini, generateChatFallback } from '../utils/ai.js'
 
 const WellnessContext = createContext(null)
 
 export function WellnessProvider({ children }) {
   const [entries, setEntries] = useState([])
   const [chatMessages, setChatMessages] = useState([])
-  const [profile, setProfile] = useState(null)
+  const [apiKey, setApiKeyState] = useState('')
+  const [aiMode, setAiMode] = useState('mock')
   const [loaded, setLoaded] = useState(false)
+  const pendingReply = useRef(false)
 
   useEffect(() => {
     setEntries(loadEntries())
     setChatMessages(loadChat())
-    setProfile(loadProfile())
+    const key = loadApiKey()
+    setApiKeyState(key)
+    setAiMode(key ? 'gemini' : 'mock')
     setLoaded(true)
   }, [])
 
   useEffect(() => { if (loaded) saveEntries(entries) }, [entries, loaded])
   useEffect(() => { if (loaded) saveChat(chatMessages) }, [chatMessages, loaded])
-  useEffect(() => { if (loaded) saveProfile(profile) }, [profile, loaded])
+  useEffect(() => { if (loaded) saveApiKey(apiKey) }, [apiKey, loaded])
 
   const todayEntry = entries.find(e => e.date === new Date().toISOString().split('T')[0])
   const streak = calculateStreak(entries)
 
-  const addEntry = useCallback((entryData) => {
+  const setApiKey = useCallback((key) => {
+    setApiKeyState(key)
+    setAiMode(key ? 'gemini' : 'mock')
+  }, [])
+
+  const addEntry = useCallback(async (entryData) => {
     const date = new Date().toISOString().split('T')[0]
     const existing = entries.findIndex(e => e.date === date)
 
@@ -35,8 +44,12 @@ export function WellnessProvider({ children }) {
       createdAt: new Date().toISOString(),
     }
 
-    const analysis = analyzeEntry(entry, entries)
-    entry.analysis = analysis
+    if (aiMode === 'gemini' && apiKey) {
+      const analysis = await analyzeEntryWithGemini(entry, entries, apiKey)
+      entry.analysis = analysis
+    } else {
+      entry.analysis = analyzeEntry(entry, entries)
+    }
 
     if (existing >= 0) {
       setEntries(prev => {
@@ -49,27 +62,41 @@ export function WellnessProvider({ children }) {
     }
 
     return entry
-  }, [entries])
+  }, [entries, aiMode, apiKey])
 
-  const sendMessage = useCallback((text) => {
+  const sendMessage = useCallback(async (text) => {
+    if (pendingReply.current) return
+    pendingReply.current = true
+
     const userMsg = { role: 'user', text, timestamp: new Date().toISOString() }
     setChatMessages(prev => [...prev, userMsg])
 
-    const response = generateChatResponse(text, entries)
-    setTimeout(() => {
-      const botMsg = { role: 'bot', text: response, timestamp: new Date().toISOString() }
-      setChatMessages(prev => [...prev, botMsg])
-    }, 600 + Math.random() * 800)
+    try {
+      let responseText
 
-    return userMsg
-  }, [entries])
+      if (aiMode === 'gemini' && apiKey) {
+        responseText = await chatWithGemini(text, chatMessages, apiKey)
+      } else {
+        await new Promise(r => setTimeout(r, 500 + Math.random() * 600))
+        responseText = generateChatFallback(text)
+      }
+
+      const botMsg = { role: 'bot', text: responseText, timestamp: new Date().toISOString() }
+      setChatMessages(prev => [...prev, botMsg])
+    } catch (err) {
+      const fallbackMsg = { role: 'bot', text: 'I\'m here for you. Could you tell me more about how you\'re feeling? 💙', timestamp: new Date().toISOString() }
+      setChatMessages(prev => [...prev, fallbackMsg])
+    }
+
+    pendingReply.current = false
+  }, [chatMessages, aiMode, apiKey])
 
   const clearChat = useCallback(() => {
     setChatMessages([])
   }, [])
 
   return (
-    <WellnessContext value={{ entries, chatMessages, profile, loaded, todayEntry, streak, addEntry, setEntries, sendMessage, clearChat, setProfile }}>
+    <WellnessContext value={{ entries, chatMessages, apiKey, aiMode, loaded, todayEntry, streak, addEntry, setEntries, sendMessage, clearChat, setApiKey }}>
       {children}
     </WellnessContext>
   )
@@ -86,16 +113,12 @@ function calculateStreak(entries) {
   const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date))
   let streak = 0
   const today = new Date()
-
   for (let i = 0; i < sorted.length; i++) {
     const expected = new Date(today)
     expected.setDate(expected.getDate() - i)
     const expectedStr = expected.toISOString().split('T')[0]
-    if (sorted[i].date === expectedStr) {
-      streak++
-    } else {
-      break
-    }
+    if (sorted[i].date === expectedStr) streak++
+    else break
   }
   return streak
 }

@@ -3,7 +3,7 @@ import { MOTIVATIONAL } from '../utils/ai.js'
 import './Dashboard.css'
 
 export default function Dashboard({ onNavigate }) {
-  const { entries, streak, todayEntry } = useWellness()
+  const { entries, streak, todayEntry, aiMode, apiKey } = useWellness()
   const quote = MOTIVATIONAL[Math.floor(Math.random() * MOTIVATIONAL.length)]
 
   const recentEntries = entries.slice(0, 7)
@@ -29,6 +29,24 @@ export default function Dashboard({ onNavigate }) {
         <p className="quote-text">"{quote}"</p>
       </div>
 
+      {aiMode === 'mock' && (
+        <div className="ai-banner">
+          <span className="ai-banner-icon">🧪</span>
+          <div>
+            <strong>Demo Mode</strong>
+            <p>Add a Gemini API key in Settings (⚙️) for real AI analysis ✨</p>
+          </div>
+        </div>
+      )}
+      {aiMode === 'gemini' && (
+        <div className="ai-banner active">
+          <span className="ai-banner-icon">✨</span>
+          <div>
+            <strong>Gemini AI Active</strong>
+            <p>Journal analysis & chat powered by real AI</p>
+          </div>
+        </div>
+      )}
       <div className="stats-grid">
         <div className="stat-card">
           <span className="stat-icon">📊</span>
