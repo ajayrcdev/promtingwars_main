@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import { WellnessProvider } from '../context/WellnessContext.jsx'
 import Navbar from '../components/Navbar.jsx'
 
-function renderWithContext(ui, { active = 'dashboard', onTabChange = () => {} } = {}) {
+function renderWithContext(ui) {
   return render(
     <WellnessProvider>
       {ui}

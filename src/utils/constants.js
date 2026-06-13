@@ -20,7 +20,7 @@ const STRESS_TRIGGER_LABELS = {
   general: 'General study-related stress',
 }
 
-const STORAGE_WARNING = 'Your Gemini API key is stored in your browser\'s localStorage. For production use, consider using a proxy server to avoid exposing your key to client-side access.'
+const STORAGE_WARNING = 'Your API key is stored in your browser\'s localStorage. For production use, consider using a proxy server to avoid exposing your key to client-side access.'
 
 function sanitizeInput(text) {
   if (typeof text !== 'string') return ''

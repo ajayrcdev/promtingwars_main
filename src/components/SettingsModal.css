@@ -157,7 +157,8 @@
   margin-bottom: 8px;
 }
 
-.mode-badge.gemini {
+.mode-badge.gemini,
+.mode-badge.groq {
   background: var(--success-light);
   color: #16a34a;
 }

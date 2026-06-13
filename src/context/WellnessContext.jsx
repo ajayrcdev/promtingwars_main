@@ -1,31 +1,21 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { loadEntries, saveEntries, loadChat, saveChat, loadApiKey, saveApiKey } from '../utils/storage.js'
-import { analyzeEntry, analyzeEntryWithGemini, chatWithGemini, generateChatFallback } from '../utils/ai.js'
+import { analyzeEntry, analyzeEntryWithGroq, chatWithGroq, generateChatFallback } from '../utils/ai.js'
 import { sanitizeInput } from '../utils/constants.js'
 
 const WellnessContext = createContext(null)
 
 export function WellnessProvider({ children }) {
-  const [entries, setEntries] = useState([])
-  const [chatMessages, setChatMessages] = useState([])
-  const [apiKey, setApiKeyState] = useState('')
-  const [aiMode, setAiMode] = useState('mock')
-  const [loaded, setLoaded] = useState(false)
+  const [entries, setEntries] = useState(() => loadEntries())
+  const [chatMessages, setChatMessages] = useState(() => loadChat())
+  const [apiKey, setApiKeyState] = useState(() => loadApiKey())
+  const [aiMode, setAiMode] = useState(() => loadApiKey() ? 'groq' : 'mock')
   const [analyzingEntry, setAnalyzingEntry] = useState(false)
   const pendingReply = useRef(false)
 
-  useEffect(() => {
-    setEntries(loadEntries())
-    setChatMessages(loadChat())
-    const key = loadApiKey()
-    setApiKeyState(key)
-    setAiMode(key ? 'gemini' : 'mock')
-    setLoaded(true)
-  }, [])
-
-  useEffect(() => { if (loaded) saveEntries(entries) }, [entries, loaded])
-  useEffect(() => { if (loaded) saveChat(chatMessages) }, [chatMessages, loaded])
-  useEffect(() => { if (loaded) saveApiKey(apiKey) }, [apiKey, loaded])
+  useEffect(() => { saveEntries(entries) }, [entries])
+  useEffect(() => { saveChat(chatMessages) }, [chatMessages])
+  useEffect(() => { saveApiKey(apiKey) }, [apiKey])
 
   const todayEntry = useMemo(
     () => entries.find(e => e.date === new Date().toISOString().split('T')[0]),
@@ -36,7 +26,7 @@ export function WellnessProvider({ children }) {
 
   const setApiKey = useCallback((key) => {
     setApiKeyState(key)
-    setAiMode(key ? 'gemini' : 'mock')
+    setAiMode(key ? 'groq' : 'mock')
   }, [])
 
   const addEntry = useCallback(async (entryData) => {
@@ -52,8 +42,8 @@ export function WellnessProvider({ children }) {
       createdAt: new Date().toISOString(),
     }
 
-    if (aiMode === 'gemini' && apiKey) {
-      const analysis = await analyzeEntryWithGemini(entry, entries, apiKey)
+    if (aiMode === 'groq' && apiKey) {
+      const analysis = await analyzeEntryWithGroq(entry, entries, apiKey)
       entry.analysis = analysis
     } else {
       entry.analysis = analyzeEntry(entry, entries)
@@ -84,8 +74,8 @@ export function WellnessProvider({ children }) {
     try {
       let responseText
 
-      if (aiMode === 'gemini' && apiKey) {
-        responseText = await chatWithGemini(cleanText, chatMessages, apiKey)
+      if (aiMode === 'groq' && apiKey) {
+        responseText = await chatWithGroq(cleanText, chatMessages, apiKey)
       } else {
         await new Promise(r => setTimeout(r, 500 + Math.random() * 600))
         responseText = generateChatFallback(cleanText)
@@ -110,9 +100,9 @@ export function WellnessProvider({ children }) {
   }, [])
 
   const value = useMemo(() => ({
-    entries, chatMessages, apiKey, aiMode, loaded, todayEntry, streak,
+    entries, chatMessages, apiKey, aiMode, todayEntry, streak,
     analyzingEntry, addEntry, setEntries, sendMessage, clearChat, setApiKey,
-  }), [entries, chatMessages, apiKey, aiMode, loaded, todayEntry, streak, analyzingEntry, addEntry, sendMessage, clearChat, setApiKey])
+  }), [entries, chatMessages, apiKey, aiMode, todayEntry, streak, analyzingEntry, addEntry, sendMessage, clearChat, setApiKey])
 
   return (
     <WellnessContext value={value}>
@@ -121,6 +111,7 @@ export function WellnessProvider({ children }) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useWellness() {
   const ctx = useContext(WellnessContext)
   if (!ctx) throw new Error('useWellness must be used within WellnessProvider')

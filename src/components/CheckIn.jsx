@@ -2,11 +2,10 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import { useWellness } from '../context/WellnessContext.jsx'
 import { MOOD_LABELS, EXAM_LIST } from '../utils/constants.js'
-import { COPING_STRATEGIES } from '../utils/ai.js'
 import './CheckIn.css'
 
 export default function CheckIn({ onDone }) {
-  const { todayEntry, addEntry, analyzingEntry } = useWellness()
+  const { todayEntry, addEntry, analyzingEntry, aiMode } = useWellness()
   const [step, setStep] = useState(todayEntry ? 4 : 1)
   const [mood, setMood] = useState(todayEntry?.mood || 5)
   const [stress, setStress] = useState(todayEntry?.stressLevel || 5)
@@ -70,7 +69,7 @@ export default function CheckIn({ onDone }) {
         <h2>Check-in Complete!</h2>
         <p className="done-sub">Your entry has been analyzed by AI.</p>
 
-        {copingStrategy?.title && (
+        {aiMode === 'groq' && copingStrategy?.title && (
           <div className="strategy-card">
             <h3>
               <span aria-hidden="true">🧘</span> Recommended: {copingStrategy.title}

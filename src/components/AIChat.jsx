@@ -9,6 +9,7 @@ export default function AIChat() {
   const [isTyping, setIsTyping] = useState(false)
   const listRef = useRef(null)
   const inputRef = useRef(null)
+  const hasWelcomed = useRef(false)
 
   useEffect(() => {
     if (listRef.current) {
@@ -17,10 +18,11 @@ export default function AIChat() {
   }, [chatMessages, isTyping])
 
   useEffect(() => {
-    if (chatMessages.length === 0 && apiKey && aiMode === 'gemini') {
+    if (!hasWelcomed.current && chatMessages.length === 0 && apiKey && aiMode === 'groq') {
+      hasWelcomed.current = true
       sendMessage('hello')
     }
-  }, [])
+  }, [chatMessages.length, apiKey, aiMode, sendMessage])
 
   const handleSend = useCallback(() => {
     if (!input.trim() || isTyping) return
@@ -28,7 +30,7 @@ export default function AIChat() {
     setInput('')
     setIsTyping(true)
     sendMessage(text)
-    setTimeout(() => setIsTyping(false), aiMode === 'gemini' ? 3000 : 1500)
+    setTimeout(() => setIsTyping(false), aiMode === 'groq' ? 3000 : 1500)
   }, [input, isTyping, sendMessage, aiMode])
 
   const handleKeyDown = useCallback((e) => {
@@ -51,7 +53,7 @@ export default function AIChat() {
           <div>
             <h2>MindWell AI</h2>
             <span className="chat-status" role="status">
-              {aiMode === 'gemini' ? '✨ Powered by Gemini AI' : '🧪 Demo Mode'}
+              {aiMode === 'groq' ? '✨ Powered by Groq AI (Llama 3.3)' : '🧪 Demo Mode'}
             </span>
           </div>
         </div>

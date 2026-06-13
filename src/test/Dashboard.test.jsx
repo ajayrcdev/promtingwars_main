@@ -27,10 +27,9 @@ describe('Dashboard', () => {
     expect(screen.getByRole('region', { name: 'Dashboard overview' })).toBeInTheDocument()
   })
 
-  it('shows motivational quote', () => {
+  it('shows greeting card with status message', () => {
     renderWithContext(<Dashboard onNavigate={() => {}} />)
-    const quoteCard = screen.getByLabelText('Daily motivational quote')
-    expect(quoteCard).toBeInTheDocument()
+    expect(screen.getByText(/Log your daily check-in/)).toBeInTheDocument()
   })
 
   it('shows streak badge', () => {

@@ -1,7 +1,6 @@
 import { useMemo, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import { useWellness } from '../context/WellnessContext.jsx'
-import { MOTIVATIONAL } from '../utils/ai.js'
 import './Dashboard.css'
 
 function MoodBar({ date, mood }) {
@@ -26,7 +25,6 @@ MoodBar.propTypes = {
 
 export default function Dashboard({ onNavigate }) {
   const { entries, streak, todayEntry, aiMode } = useWellness()
-  const quote = useMemo(() => MOTIVATIONAL[Math.floor(Math.random() * MOTIVATIONAL.length)], [])
 
   const { avgMood, totalCheckins, goodDays, recentEntries } = useMemo(() => {
     const recent = entries.slice(0, 7)
@@ -57,28 +55,13 @@ export default function Dashboard({ onNavigate }) {
         </div>
       </header>
 
-      <div className="quote-card" aria-label="Daily motivational quote">
-        <p className="quote-text">&ldquo;{quote}&rdquo;</p>
+      <div className="greeting-card">
+        <p className="greeting-text">
+          {aiMode === 'groq'
+            ? '✨ AI is active — your entries are analyzed by Groq.'
+            : 'Log your daily check-in to track your well-being.'}
+        </p>
       </div>
-
-      {aiMode === 'mock' && (
-        <div className="ai-banner" role="status" aria-label="Demo mode active">
-          <span className="ai-banner-icon" aria-hidden="true">🧪</span>
-          <div>
-            <strong>Demo Mode</strong>
-            <p>Add a Gemini API key in Settings (⚙️) for real AI analysis ✨</p>
-          </div>
-        </div>
-      )}
-      {aiMode === 'gemini' && (
-        <div className="ai-banner active" role="status" aria-label="Gemini AI active">
-          <span className="ai-banner-icon" aria-hidden="true">✨</span>
-          <div>
-            <strong>Gemini AI Active</strong>
-            <p>Journal analysis & chat powered by real AI</p>
-          </div>
-        </div>
-      )}
 
       <section className="stats-grid" aria-label="Your wellness statistics">
         <div className="stat-card">
@@ -110,7 +93,7 @@ export default function Dashboard({ onNavigate }) {
           <p className="today-journal">
             &ldquo;{todayEntry.journal.slice(0, 120)}{todayEntry.journal.length > 120 ? '…' : ''}&rdquo;
           </p>
-          {todayEntry.analysis?.motivational && (
+          {aiMode === 'groq' && todayEntry.analysis?.motivational && (
             <p className="today-motivation" role="status">
               <span aria-hidden="true">💙</span> {todayEntry.analysis.motivational}
             </p>

@@ -1,4 +1,5 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
+const GROQ_MODEL = 'llama-3.3-70b-versatile'
+const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions'
 
 const COPING_STRATEGIES = [
   { title: '4-7-8 Breathing', desc: 'Inhale for 4s, hold for 7s, exhale for 8s. Calms nervous system.' },
@@ -113,28 +114,30 @@ function buildAnalysisFallback(entry) {
   }
 }
 
-export async function analyzeEntryWithGemini(entry, history, apiKey) {
-  const genAI = new GoogleGenerativeAI(apiKey)
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
-    generationConfig: {
-      temperature: 0.7,
-      topP: 0.9,
-      topK: 40,
-    },
-  })
-
+export async function analyzeEntryWithGroq(entry, history, apiKey) {
   const prompt = ANALYSIS_PROMPT
     .replace('{{JOURNAL}}', entry.journal)
     .replace('{{MOOD_HISTORY}}', buildMoodHistory(history))
 
   try {
-    const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { responseMimeType: 'application/json' },
+    const response = await fetch(GROQ_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+        response_format: { type: 'json_object' },
+      }),
     })
 
-    const text = result.response.text()
+    if (!response.ok) {
+      const errBody = await response.text()
+      throw new Error(`Groq API error ${response.status}: ${errBody}`)
+    }
+
+    const data = await response.json()
+    const text = data.choices[0].message.content
     const parsed = parseAnalysisJSON(text)
 
     if (parsed && parsed.sentiment && parsed.stressTriggers) {
@@ -151,46 +154,44 @@ export async function analyzeEntryWithGemini(entry, history, apiKey) {
       }
     }
   } catch (err) {
-    console.warn('Gemini analysis failed, using fallback:', err.message)
+    console.warn('Groq analysis failed, using fallback:', err.message)
   }
 
   return buildAnalysisFallback(entry)
 }
 
-export async function chatWithGemini(message, history, apiKey) {
-  const genAI = new GoogleGenerativeAI(apiKey)
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
-    generationConfig: {
-      temperature: 0.8,
-      topK: 40,
-      topP: 0.95,
-    },
-  })
-
-  const contextMessages = history.slice(-10).map(m => ({
-    role: m.role === 'bot' ? 'model' : 'user',
-    parts: [{ text: m.text }],
-  }))
+export async function chatWithGroq(message, history, apiKey) {
+  const messages = [
+    { role: 'system', content: CHAT_SYSTEM_PROMPT },
+    ...history.map(m => ({ role: m.role === 'bot' ? 'assistant' : 'user', content: m.text })),
+    { role: 'user', content: message },
+  ]
 
   try {
-    const chat = model.startChat({
-      history: [
-        { role: 'user', parts: [{ text: CHAT_SYSTEM_PROMPT }] },
-        { role: 'model', parts: [{ text: 'Understood. I will act as MindWell AI, a compassionate wellness companion for students.' }] },
-        ...contextMessages.slice(0, -1),
-      ],
+    const response = await fetch(GROQ_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages,
+        temperature: 0.8,
+      }),
     })
 
-    const result = await chat.sendMessage(message)
-    return result.response.text()
+    if (!response.ok) {
+      const errBody = await response.text()
+      throw new Error(`Groq API error ${response.status}: ${errBody}`)
+    }
+
+    const data = await response.json()
+    return data.choices[0].message.content
   } catch (err) {
-    console.warn('Gemini chat failed, using fallback:', err.message)
+    console.warn('Groq chat failed, using fallback:', err.message)
     return generateChatFallback(message)
   }
 }
 
-export function analyzeEntry(entry, history) {
+export function analyzeEntry(entry) {
   return buildAnalysisFallback(entry)
 }
 
@@ -270,5 +271,5 @@ function generateChatFallback(message) {
   ])
 }
 
-export { COPING_STRATEGIES, MINDFULNESS_EXERCISES, MOTIVATIONAL }
+export { COPING_STRATEGIES, MINDFULNESS_EXERCISES, MOTIVATIONAL, GROQ_ENDPOINT, GROQ_MODEL }
 export { generateChatFallback }

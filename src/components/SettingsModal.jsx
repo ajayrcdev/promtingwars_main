@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import PropTypes from 'prop-types'
-import { GoogleGenerativeAI } from '@google/generative-ai'
 import { useWellness } from '../context/WellnessContext.jsx'
 import { STORAGE_WARNING } from '../utils/constants.js'
+import { GROQ_ENDPOINT, GROQ_MODEL } from '../utils/ai.js'
 import './SettingsModal.css'
 
 export default function SettingsModal({ onClose }) {
@@ -25,30 +25,43 @@ export default function SettingsModal({ onClose }) {
     }
   }, [onClose])
 
-  const handleSave = useCallback(() => {
+  function handleSave() {
     setApiKey(key.trim())
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
-  }, [key, setApiKey])
+  }
 
-  const handleClear = useCallback(() => {
+  function handleClear() {
     setKey('')
     setApiKey('')
-  }, [setApiKey])
+  }
 
-  const testKey = useCallback(async () => {
-    if (!key.trim()) return
+  async function testKey() {
+    const currentKey = key.replace(/[^\x20-\x7E]/g, '').trim()
+    if (!currentKey || currentKey.length < 10) {
+      setTestStatus('invalid')
+      return
+    }
     setTestStatus('testing')
     try {
-      const genAI = new GoogleGenerativeAI(key.trim())
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
-      const result = await model.generateContent('Say "ok"')
-      await result.response.text()
-      setTestStatus('valid')
+      const response = await fetch(GROQ_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${currentKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: GROQ_MODEL,
+          messages: [{ role: 'user', content: 'Say "ok"' }],
+          max_tokens: 10,
+        }),
+      })
+      if (response.ok) {
+        setTestStatus('valid')
+      } else {
+        setTestStatus('invalid')
+      }
     } catch {
       setTestStatus('invalid')
     }
-  }, [key])
+  }
 
   return (
     <div
@@ -70,25 +83,27 @@ export default function SettingsModal({ onClose }) {
 
         <div className="modal-body">
           <section className="setting-section">
-            <h3>Google Gemini AI</h3>
+            <h3>Groq AI (<code>{GROQ_MODEL}</code>)</h3>
             <p className="setting-desc">
-              Connect your own Gemini API key to use real AI analysis and chat.
-              Get a free key at{' '}
-              <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">
-                aistudio.google.com/apikey
+              Connect a free Groq API key to use real AI analysis and chat.
+              Sign up and get a free API key at{' '}
+              <a href="https://console.groq.com" target="_blank" rel="noreferrer">
+                console.groq.com
               </a>
+              {' '}(no credit card required).
             </p>
 
             <div className="api-key-input-wrap">
-              <label htmlFor="api-key" className="sr-only">Gemini API key</label>
+              <label htmlFor="api-key" className="sr-only">Groq API key</label>
               <input
                 id="api-key"
                 type="password"
                 className="api-key-input"
-                placeholder="Enter your Gemini API key"
+                placeholder="Enter your Groq API key (gsk_...)"
                 value={key}
                 onChange={e => setKey(e.target.value)}
                 autoComplete="off"
+                maxLength={200}
               />
               <button
                 className="btn-secondary"
@@ -122,12 +137,12 @@ export default function SettingsModal({ onClose }) {
           <section className="setting-section">
             <h3>AI Mode</h3>
             <div className={`mode-badge ${aiMode}`} role="status">
-              {aiMode === 'gemini' ? '✨ Gemini AI (Real)' : '🧪 Mock AI (Demo)'}
+              {aiMode === 'groq' ? '✨ Groq AI (Real — Llama 3.3)' : '🧪 Mock AI (Demo)'}
             </div>
             <p className="setting-desc">
               {aiMode === 'mock'
-                ? 'Add a Gemini API key above to unlock real AI-powered analysis and conversations.'
-                : 'Journal entries are analyzed and chat responses are generated using Google Gemini. Your key stays in your browser.'}
+                ? 'Add a Groq API key above to unlock real AI-powered analysis and conversations.'
+                : 'Journal entries are analyzed and chat responses are generated using Groq (Llama 3.3). Your key stays in your browser.'}
             </p>
           </section>
 

@@ -1,10 +1,9 @@
 import { useMemo } from 'react'
 import { useWellness } from '../context/WellnessContext.jsx'
-import { COPING_STRATEGIES, MINDFULNESS_EXERCISES } from '../utils/ai.js'
 import './Insights.css'
 
 export default function Insights() {
-  const { entries } = useWellness()
+  const { entries, aiMode } = useWellness()
 
   const stats = useMemo(() => {
     if (entries.length < 2) return null
@@ -27,10 +26,7 @@ export default function Insights() {
     const worstDays = sortedByMood.slice(0, 3)
     const bestDays = [...sortedByMood].reverse().slice(0, 3)
 
-    const strategy = COPING_STRATEGIES[Math.floor(Math.random() * COPING_STRATEGIES.length)]
-    const exercise = MINDFULNESS_EXERCISES[Math.floor(Math.random() * MINDFULNESS_EXERCISES.length)]
-
-    return { avgMood, lowMoods, highMoods, total: moods.length, topTriggers, allTriggers: allTriggers.length, worstDays, bestDays, strategy, exercise }
+    return { avgMood, lowMoods, highMoods, total: moods.length, topTriggers, allTriggers: allTriggers.length, worstDays, bestDays, latestMood: entries[0].mood, earliestRecent: entries[entries.length - 1]?.mood }
   }, [entries])
 
   if (!stats) {
@@ -45,19 +41,13 @@ export default function Insights() {
     )
   }
 
-  const trendText = entries.length >= 3
-    ? entries[0].mood > entries[entries.length - 1].mood
-      ? 'Your recent mood is trending upward — keep up the great work! 🌱'
-      : entries[0].mood < entries[entries.length - 1].mood
-        ? 'Your mood has dipped recently. Remember to reach out for support when needed. 💙'
-        : 'Your mood has been consistent, which shows stability.'
-    : ''
+  const latestMood = stats.latestMood
+  const earliestRecent = stats.earliestRecent
 
   return (
     <div className="insights-page" role="region" aria-label="Wellness insights">
       <header className="page-header">
         <h1>Insights</h1>
-        <span className="entry-count">AI-powered</span>
       </header>
 
       <section className="insights-summary" aria-label="Key metrics">
@@ -109,7 +99,15 @@ export default function Insights() {
           <span aria-hidden="true">📈</span> Mood Trends
         </h2>
         <div className="trend-insights">
-          {trendText && <p className="trend-text">{trendText}</p>}
+          {entries.length >= 3 && latestMood !== undefined && earliestRecent !== undefined && (
+            <p className="trend-text">
+              {latestMood > earliestRecent
+                ? 'Trending upward over recent entries.'
+                : latestMood < earliestRecent
+                  ? 'Trending downward over recent entries.'
+                  : 'Mood has remained stable.'}
+            </p>
+          )}
           {stats.worstDays[0] && (
             <div className="day-highlight">
               <span className="highlight-label">Toughest day</span>
@@ -127,43 +125,22 @@ export default function Insights() {
         </div>
       </section>
 
-      <section className="insight-card" aria-label="Suggested wellness practices">
-        <h2>
-          <span aria-hidden="true">🧘</span> Suggested Practices
-        </h2>
-        <div className="practice-card">
-          <h3>Coping Strategy</h3>
-          <p className="practice-title">{stats.strategy.title}</p>
-          <p className="practice-desc">{stats.strategy.desc}</p>
-        </div>
-        <div className="practice-card">
-          <h3>Mindfulness Exercise</h3>
-          <p className="practice-title">{stats.exercise.title}</p>
-          <p className="practice-desc">{stats.exercise.desc}</p>
-        </div>
-      </section>
+      {aiMode === 'groq' && (
+        <section className="insight-card" aria-label="Suggested wellness practices">
+          <h2>
+            <span aria-hidden="true">🧘</span> Suggested Practices
+          </h2>
+          <p>AI-generated coping strategies and mindfulness exercises will appear after your next check-in with Groq active.</p>
+        </section>
+      )}
 
-      {entries.length >= 5 && (
+      {aiMode === 'groq' && entries.length >= 5 && (
         <section className="insight-card" aria-label="AI pattern analysis">
           <h2>
             <span aria-hidden="true">💡</span> GenAI Pattern Analysis
           </h2>
           <div className="pattern-analysis">
-            <p>Based on your {entries.length} journal entries, here are your emotional patterns:</p>
-            <ul className="pattern-list">
-              <li>
-                <strong>Weekly rhythm:</strong> Your mood follows a{' '}
-                {Number(stats.avgMood) > 5 ? 'generally positive' : 'variable'} pattern.
-              </li>
-              {stats.topTriggers.length > 0 && (
-                <li>
-                  <strong>Recurring trigger:</strong> &ldquo;{stats.topTriggers[0][0]}&rdquo; appears most frequently.
-                </li>
-              )}
-              <li>
-                <strong>Recommendation:</strong> Try &ldquo;{stats.strategy.title}&rdquo; when stress exceeds 7/10.
-              </li>
-            </ul>
+            <p>Groq-powered pattern analysis will be available when your API key is active.</p>
           </div>
         </section>
       )}

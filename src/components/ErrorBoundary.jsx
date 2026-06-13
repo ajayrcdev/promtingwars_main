@@ -19,6 +19,7 @@ export default class ErrorBoundary extends Component {
           <p style={{ color: '#64748b', marginBottom: 24 }}>Please refresh the page to continue.</p>
           <button
             onClick={() => window.location.reload()}
+            aria-label="Refresh page to recover"
             style={{
               padding: '12px 28px',
               borderRadius: 10,
